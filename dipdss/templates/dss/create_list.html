@@ -1,0 +1,134 @@
+{% extends "../base.html" %}
+
+{% block title %}Create{% endblock title %}
+
+{% block content %}
+<div class='container mt-5'>
+    <div class="list-group">
+        <div class="mb-4">
+            <h3>NSGA3</h3>
+            <a type="button" href="{% url 'create_nsga3' %}" class="btn btn-primary mb-1">Создать</a>
+            <div class="accordion" id="accordionNSGA3">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingNSGA3">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNSGA3" aria-expanded="false" aria-controls="collapseNSGA3">
+                     Редактировать
+                    </button>
+                  </h2>
+                  <div id="collapseNSGA3" class="accordion-collapse collapse" aria-labelledby="headingNSGA3" data-bs-parent="#accordionNSGA3">
+                    <div class="accordion-body"> 
+                    {% for nsga3 in nsga3s %}
+                        <a type="button" href="{% url 'update_nsga3' nsga3.pk %}" class="btn btn-primary">{{ nsga3.alg_name }}</a>
+                    {% endfor %}
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h3>U-NSGA3</h3>
+            <a type="button" href="{% url 'create_unsga3' %}" class="btn btn-primary mb-1">Создать</a>
+            <div class="accordion" id="accordionUNSGA3">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingUNSGA3">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUNSGA3" aria-expanded="false" aria-controls="collapseUNSGA3">
+                     Редактировать
+                    </button>
+                  </h2>
+                  <div id="collapseUNSGA3" class="accordion-collapse collapse" aria-labelledby="headingUNSGA3" data-bs-parent="#accordionUNSGA3">
+                    <div class="accordion-body"> 
+                    {% for unsga3 in unsga3s %}
+                        <a type="button" href="{% url 'update_unsga3' unsga3.pk %}" class="btn btn-primary">{{ unsga3.alg_name }}</a>
+                    {% endfor %}
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h3>Проблема</h3>
+            <a type="button" href="{% url 'create_problem' %}" class="btn btn-primary mb-1">Создать</a>
+            <div class="accordion" id="accordionProblem">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingProblem">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProblem" aria-expanded="false" aria-controls="collapseProblem">
+                     Редактировать
+                    </button>
+                  </h2>
+                  <div id="collapseProblem" class="accordion-collapse collapse" aria-labelledby="headingProblem" data-bs-parent="#accordionProblem">
+                    <div class="accordion-body"> 
+                    {% for problem in problems %}
+                        <a type="button" href="{% url 'update_problem' problem.pk %}" class="btn btn-primary">{{ problem.problem_name }}</a>
+                    {% endfor %}
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h3>Функции критериев</h3>
+            <a type="button" href="{% url 'create_fg' %}" class="btn btn-primary mb-1">Создать</a>
+            <div class="accordion" id="accordionFG">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingFG">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFG" aria-expanded="false" aria-controls="collapseFG">
+                     Редактировать
+                    </button>
+                  </h2>
+                  <div id="collapseFG" class="accordion-collapse collapse" aria-labelledby="headingFG" data-bs-parent="#accordionFG">
+                    <div class="accordion-body"> 
+                    {% for fg in fgs %}
+                        <a type="button" href="{% url 'update_fg' fg.pk %}" class="btn btn-primary">{{ fg.fg_name }}</a>
+                    {% endfor %}
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <div class="mb-4">
+            <h3>Задача</h3>
+            <a type="button" href="{% url 'task_create' %}" class="btn btn-primary mb-1">Собрать</a>
+        </div>
+        <div>
+          <h3>Созданные задачи</h3>
+          <div class="accordion" id="accordionTask">
+            {% for task in tasks %}
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingTask{{task.pk}}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTask{{task.pk}}" aria-expanded="false" aria-controls="collapseTask{{task.pk}}">
+                 {{task.task_name}}
+                </button>
+              </h2>
+              <div id="collapseTask{{task.pk}}" class="accordion-collapse collapse" aria-labelledby="headingTask{{task.pk}}" data-bs-parent="#accordionTask">
+                <div class="accordion-body"> 
+                  <div>
+                      <p>Status:{{ task.status }} | {{task.start_time}} | {{task.end_time}}</p>
+                      {% if task.status == "Ready" %}
+                      <form method="POST">{% csrf_token %}
+                        <input type="hidden" name="task" value="{{ task.pk }}">
+                        <input type="submit" name="Ready" value="Launch" class="btn btn-primary">
+                        <input type="submit" name="Delete" value="Delete" class="btn btn-danger">
+                      </form>
+                      {% elif task.status == "Launched" %}
+                        <a type="button" class="btn btn-primary disabled">Запущен в {{ task.start_time }}</a>
+                      {% elif task.status == "Error" or task.status == "Succes" %}
+                        <form method="POST">{% csrf_token %}
+                          <a type="button" href="{% url 'task_detail' task.pk %}" class="btn btn-primary">Просмотр</a>
+                          <input type="hidden" name="task" value="{{ task.pk }}" class="btn btn-primary">
+                          <input type="submit" name="Delete" value="Delete" class="btn btn-danger">
+                        </form>
+                      {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+    </div>
+
+  
+    </div>
+
+</div>
+{% endblock content %}

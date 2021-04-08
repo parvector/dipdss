@@ -1,0 +1,83 @@
+{% extends "../base.html" %}
+
+{% block title %}Detail{% endblock title %}
+
+{% block content %}
+
+
+
+
+    {% if object.status == "Succes"%}
+    <div class="accordion" id="accordionResult">
+
+        {% for res in object.resultmodel_set.all %}
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="heading{{ res.id }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ res.id }}" aria-expanded="false" aria-controls="collapse{{ res.id }}">
+    
+                <b>Problem</b>={{ object.problem_fk.problem_name }};
+                {% if res.nsga3_fk %}
+                    <b>Algorithm</b>={{ res.nsga3_fk.alg_name }};
+                    <b>pop size</b>={{ res.nsga3_fk.pop_size }};
+                    <b>eliminate_duplicates</b>={{ res.nsga3_fk.eliminate_duplicates }};
+                    <b>n gen</b>={{ res.nsga3_fk.n_gen }};
+                    <b>n offsprings</b>={{ res.nsga3_fk.n_offsprings }};
+                {% elif res.unsga3_fk %}
+                    <b>Algorithm</b>={{ res.unsga3_fk.alg_name }};
+                    <b>pop size</b>={{ res.unsga3_fk.pop_size }};
+                    <b>eliminate_duplicates</b>={{ res.unsga3_fk.eliminate_duplicates }};
+                    <b>n gen</b>={{ res.unsga3_fk.n_gen }};
+                    <b>n offsprings</b>={{ res.unsga3_fk.n_offsprings }};
+                {% endif %}
+                <b>HV</b>={{ res.hv }}
+    
+            </button>
+          </h2>
+          <div id="collapse{{ res.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ res.id }}" data-bs-parent="#accordionResult">
+            <div class="accordion-body">
+    
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Result X</label>
+                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
+                        {{ res.result_x }}
+                    </textarea>
+                </div>
+    
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Result F</label>
+                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
+                        {{ res.result_f }}
+                    </textarea>
+                </div>
+    
+                <div class="form-group">
+                    <label for="exampleFormControlTextarea1">Result G</label>
+                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
+                        {{ res.result_g }}
+                    </textarea>
+                </div>
+                
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        
+    </div>
+    
+
+    {% elif object.status == "Error" %}
+        <div class="form-group">
+            <label for="exampleFormControlTextarea1">Result of error</label>
+            <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
+                {{ object.error_result }}
+            </textarea>
+        </div>
+
+        <form method="POST" action="{% url 'create_list' %}" >{% csrf_token %}
+            <input type="hidden" name="task" value="{{ object.id }}">
+            <input type="submit" name="change_ready" value="Change to Ready">
+        </form>
+
+    {% endif %}
+
+{% endblock content %}

@@ -1,0 +1,18 @@
+{% extends "../base.html" %}
+
+{% block title %}Create FG{% endblock title %}
+
+{% block content %}
+<main class="container mt-5">
+  <div class="row">
+    <div class="col">
+    <h3 class="text-center">FG</h3>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Create</button>
+    </form>
+  </div>
+  </div>
+<mian>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "../base.html" %}
+
+{% block title %}Update UNSGA3{% endblock title %}
+
+{% block content %}
+<main class="container mt-5">
+  <div class="row">
+    <div class="col">
+      <h3 class="text-center">UNSGA3</h3>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Save" class="btn btn-primary">
+        <input type="submit" value="Delete" class="btn btn-danger">
+      </form>
+    </div>
+  </div>
+<mian>
+{% endblock content %}
