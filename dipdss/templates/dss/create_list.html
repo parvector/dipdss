@@ -102,16 +102,18 @@
               <div id="collapseTask{{task.pk}}" class="accordion-collapse collapse" aria-labelledby="headingTask{{task.pk}}" data-bs-parent="#accordionTask">
                 <div class="accordion-body"> 
                   <div>
-                      <p>Status:{{ task.status }} | {{task.start_time}} | {{task.end_time}}</p>
                       {% if task.status == "Ready" %}
+                      <p>Status:{{ task.status }}</p>
                       <form method="POST">{% csrf_token %}
                         <input type="hidden" name="task" value="{{ task.pk }}">
                         <input type="submit" name="Ready" value="Launch" class="btn btn-primary">
                         <input type="submit" name="Delete" value="Delete" class="btn btn-danger">
                       </form>
                       {% elif task.status == "Launched" %}
+                        <p>Status:{{ task.status }} | {{task.start_time}}</p>
                         <a type="button" class="btn btn-primary disabled">Запущен в {{ task.start_time }}</a>
                       {% elif task.status == "Error" or task.status == "Succes" %}
+                        <p>Status:{{ task.status }} | {{task.start_time}} | {{task.end_time}}</p>
                         <form method="POST">{% csrf_token %}
                           <a type="button" href="{% url 'task_detail' task.pk %}" class="btn btn-primary">Просмотр</a>
                           <input type="hidden" name="task" value="{{ task.pk }}" class="btn btn-primary">

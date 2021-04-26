@@ -9,9 +9,9 @@
         <h3 class="text-center">FG</h3>
         <form method="post">
           {% csrf_token %}
-          {{ form.as_p }}
+          {{ form.as_p }} 
           <input type="submit" value="Save" class="btn btn-primary">
-          <input type="submit" value="Delete" class="btn btn-danger">
+          <input type="submit" name="Delete" value="Delete" class="btn btn-danger">
         </form>
       </div>
     </div>

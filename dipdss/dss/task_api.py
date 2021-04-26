@@ -8,6 +8,9 @@ import numpy as np
 from pymoo.factory import get_reference_directions, get_termination, get_performance_indicator
 from pymoo.optimize import minimize
 from asgiref.sync import sync_to_async
+import plotly.express as pe
+import plotly.graph_objects as go
+import plotly
 
 
 
@@ -84,13 +87,16 @@ def nsga3_task(task_id, problem):
     alg.isused = True
     alg.save()
     task.nsga3_fk.add(alg)
-    if alg.ref_dirs == "":
+
+    if alg.ref_dirs:
+      ref_dirs = eval(alg.ref_dirs)
+    else:
       ref_dirs = get_reference_directions(alg.auto_ref_dirs_method, 
                                           alg.auto_ref_dirs_dimensions, 
-                                          n_partitions=alg.auto_ref_dirs_npartitions)
-    else:
-      ref_dirs = np.array(eval(alg.ref_dirs))
-
+                                          n_partitions=alg.auto_ref_dirs_npartitions,
+                                          scalling=2)
+      alg.ref_dirs = ref_dirs.tolist()
+      alg.save()
 
     nsga3 = NSGA3(ref_dirs = ref_dirs)
     nsga3.pop_size = alg.pop_size
@@ -100,15 +106,70 @@ def nsga3_task(task_id, problem):
       
     term = get_termination('n_gen', alg.n_gen)
 
-    res = minimize(problem=problem, algorithm= nsga3, termination=term, save_history=True)
+    res = minimize(problem=problem, algorithm=nsga3, termination=term, save_history=True)
+    hstry_x = []
+    hstry_f = []
+    hstry_g = []
+    for h in res.history:
+      tmp_list = list(h.opt.get("X"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_x.append(tmp_list)
+
+      tmp_list = list(h.opt.get("F"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_f.append(tmp_list)
+
+      tmp_list = list(h.opt.get("G"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_g.append(tmp_list)
     res_mod = ResultModel(task_fk=task,
                         nsga3_fk=alg,
                         problem_fk=task.problem_fk,
-                        result_x=res.X,
-                        result_f=res.F,
-                        result_g=res.G,
-                        hv=hv.calc(res.F) if task.is_hv else None,)
+                        result_x=res.X.tolist(),
+                        hstry_x=hstry_x,
+                        result_f=res.F.tolist(),
+                        hstry_f=hstry_f,
+                        result_g=res.G.tolist(),
+                        hstry_g=hstry_g,
+                        hvs=[ [ hv.calc(np.array(f)) for f in F  ] for F in hstry_f] if task.is_hv else None)
     res_mod.save()
+
+    hvs_gens_fig = pe.line(
+      x=list(range(1,alg.n_gen+1)),
+      y=[ max(hv_lst) for hv_lst in res_mod.hvs],
+      title="Best HyperVolume by generation.",
+    )
+    hvs_gens_fig.update_layout(
+      xaxis_title="GEN",
+      yaxis_title="BEST HV IN GEN"
+    )
+    res_mod.hvs_gens_fig = plotly.io.to_html(fig=hvs_gens_fig,full_html=False)
+    res_mod.save()
+
+    if len(alg.ref_dirs[0]) == 2:
+      ref_dirs_fig = pe.scatter(x=np.array(ref_dirs)[:,0], 
+                                y=np.array(ref_dirs)[:,1],
+                                labels={"x":"0","y":"1"})
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()
+    elif len(alg.ref_dirs[0]) == 3:
+      ref_dirs_fig = pe.scatter_3d(x=np.array(ref_dirs)[:,0], 
+                                  y=np.array(ref_dirs)[:,1], 
+                                  z=np.array(ref_dirs)[:,2],
+                                  labels={"x":"0","y":"1","z":"2"})
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()
+    else:
+      values_np = np.array(alg.ref_dirs)
+      ref_dirs_fig = go.Figure(data=go.Splom(
+        dimensions=[ dict(label=f"{v}",values=values_np[:,v]) for v in range(len(values_np[0])) ],
+        diagonal_visible=False
+      ))
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()
 
 
 def unsga3_task(task_id, problem):
@@ -122,12 +183,14 @@ def unsga3_task(task_id, problem):
     alg.isused = True
     alg.save()
     task.unsga3_fk.add(alg)
-    if alg.ref_dirs == "":
+    if alg.ref_dirs:
+      ref_dirs = eval(alg.ref_dirs)
+    else:
       ref_dirs = get_reference_directions(alg.auto_ref_dirs_method, 
                                           alg.auto_ref_dirs_dimensions, 
                                           n_partitions=alg.auto_ref_dirs_npartitions)
-    else:
-      ref_dirs = np.array(eval(alg  .ref_dirs))
+      alg.ref_dirs = ref_dirs.tolist()
+      alg.save()
 
     unsga3 = UNSGA3(ref_dirs = ref_dirs)
     unsga3.pop_size = alg.pop_size
@@ -138,11 +201,67 @@ def unsga3_task(task_id, problem):
     term = get_termination('n_gen', alg.n_gen)
 
     res = minimize(problem=problem, algorithm= unsga3, termination=term, save_history=True)
+    hstry_x = []
+    hstry_f = []
+    hstry_g = []
+    for h in res.history:
+      tmp_list = list(h.opt.get("X"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_x.append(tmp_list)
+
+      tmp_list = list(h.opt.get("F"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_f.append(tmp_list)
+
+      tmp_list = list(h.opt.get("G"))
+      for indx in range(len(tmp_list)):
+        tmp_list[indx] = list(tmp_list[indx])
+      hstry_g.append(tmp_list)
     res_mod = ResultModel(task_fk=task,
                         unsga3_fk=alg,
                         problem_fk=task.problem_fk,
-                        result_x=res.X,
-                        result_f=res.F,
-                        result_g = res.G,
-                        hv= hv.calc(res.F) if task.is_hv else None)
+                        result_x=res.X.tolist(),
+                        hstry_x=hstry_x,
+                        result_f=res.F.tolist(),
+                        hstry_f=hstry_f,
+                        result_g=res.G.tolist(),
+                        hstry_g=hstry_g,
+                        hvs=[ [ hv.calc(np.array(f)) for f in F  ] for F in hstry_f] if task.is_hv else None)
     res_mod.save()
+
+
+    hvs_gens_fig = pe.line(
+      x=list(range(1,alg.n_gen+1)),
+      y=[ max(hv_lst) for hv_lst in res_mod.hvs],
+      title="Best HyperVolume by generation.",
+    )
+    hvs_gens_fig.update_layout(
+      xaxis_title="GEN",
+      yaxis_title="BEST HV IN GEN"
+    )
+    res_mod.hvs_gens_fig = plotly.io.to_html(fig=hvs_gens_fig,full_html=False)
+    res_mod.save()
+
+    if len(alg.ref_dirs[0]) == 2:
+      ref_dirs_fig = pe.scatter(x=np.array(ref_dirs)[:,0], 
+                                y=np.array(ref_dirs)[:,1],
+                                labels={"x":"0","y":"1"})
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()
+    elif len(alg.ref_dirs[0]) == 3:
+      ref_dirs_fig = pe.scatter_3d(x=np.array(ref_dirs)[:,0], 
+                                  y=np.array(ref_dirs)[:,1], 
+                                  z=np.array(ref_dirs)[:,2],
+                                  labels={"x":"0","y":"1","z":"2"})
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()
+    else:
+      values_np = np.array(alg.ref_dirs)
+      ref_dirs_fig = go.Figure(data=go.Splom(
+        dimensions=[ dict(label=f"{v}",values=values_np[:,v]) for v in range(len(values_np[0])) ],
+        diagonal_visible=False
+      ))
+      res_mod.ref_dirs_fig = plotly.io.to_html(fig=ref_dirs_fig, full_html=False)
+      res_mod.save()

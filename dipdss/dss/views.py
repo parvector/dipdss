@@ -6,10 +6,15 @@ from django.views.generic.detail import DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
 from dss.forms import *
 from django.http import HttpResponse, HttpResponseForbidden
 from .task_api import *
 from django.contrib.auth.decorators import login_required
+import plotly.express as pe
+import plotly.graph_objects as go
+import plotly
+import copy
 
 
 
@@ -85,7 +90,7 @@ class SignUpView(CreateView):
 class CreateNSGA3View(LoginRequiredMixin,CreateView):
     model = NSGA3Model
     fields = ["alg_name", "ref_dirs", "auto_ref_dirs_method", "auto_ref_dirs_dimensions", 
-            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings"]   
+            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings", "n_gen"]   
     template_name = "dss/create_nsga3.html"
     success_url = reverse_lazy("create_list")
 
@@ -99,7 +104,7 @@ class CreateNSGA3View(LoginRequiredMixin,CreateView):
 class UpdateNSGA3View(LoginRequiredMixin, ModelFormMixin, DetailView):
     model = NSGA3Model
     fields = ["alg_name", "ref_dirs", "auto_ref_dirs_method", "auto_ref_dirs_dimensions", 
-            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings"] 
+            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings", "n_gen"] 
     template_name = "dss/update_nsga3.html"
     success_url = reverse_lazy("create_list")
 
@@ -107,6 +112,9 @@ class UpdateNSGA3View(LoginRequiredMixin, ModelFormMixin, DetailView):
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
         self.object = self.get_object()
+        if self.request.POST.get("Delete",False):
+            self.object.delete()
+            return redirect("create_list")
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -120,7 +128,7 @@ class UpdateNSGA3View(LoginRequiredMixin, ModelFormMixin, DetailView):
 class CreateUNSGA3View(LoginRequiredMixin,CreateView):
     model = UNSGA3Model
     fields = ["alg_name", "ref_dirs", "auto_ref_dirs_method", "auto_ref_dirs_dimensions", 
-            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings"]   
+            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings", "n_gen"]   
     template_name = "dss/create_unsga3.html"
     success_url = reverse_lazy("create_list")
 
@@ -134,7 +142,7 @@ class CreateUNSGA3View(LoginRequiredMixin,CreateView):
 class UpdateUNSGA3View(LoginRequiredMixin, ModelFormMixin, DetailView):
     model = UNSGA3Model
     fields = ["alg_name", "ref_dirs", "auto_ref_dirs_method", "auto_ref_dirs_dimensions", 
-            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings"] 
+            "auto_ref_dirs_npartitions", "pop_size", "eliminate_duplicates", "n_offsprings", "n_gen"] 
     template_name = "dss/update_unsga3.html"
     success_url = reverse_lazy("create_list")
 
@@ -142,6 +150,9 @@ class UpdateUNSGA3View(LoginRequiredMixin, ModelFormMixin, DetailView):
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
         self.object = self.get_object()
+        if self.request.POST.get("Delete",False):
+            self.object.delete()
+            return redirect("create_list")
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -174,6 +185,9 @@ class UpdateProblemView(LoginRequiredMixin, ModelFormMixin, DetailView):
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
         self.object = self.get_object()
+        if self.request.POST.get("Delete",False):
+            self.object.delete()
+            return redirect("create_list")
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -206,6 +220,9 @@ class UpdateFGView(LoginRequiredMixin, ModelFormMixin, DetailView):
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
         self.object = self.get_object()
+        if self.request.POST.get("Delete",False):
+            self.object.delete()
+            return redirect("create_list")
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -237,4 +254,27 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        obj = context["object"]
+        context["ress_hsts_hvs"] = []
+        all_res_hvs = []
+        for res in obj.resultmodel_set.all():
+            context["ress_hsts_hvs"].append({ "res":res, "hstry_x_f_g":list( zip( eval(res.hstry_x),eval(res.hstry_f),eval(res.hstry_g), eval(res.hvs) ) ) })
+
+            if res.nsga3_fk:
+                alg_name = res.nsga3_fk.alg_name
+            elif res.unsga3_fk:
+                alg_name = res.unsga3_fk.alg_name
+            if res.nsga3_fk:
+                gens = res.nsga3_fk.n_gen
+            elif res.unsga3_fk:
+                gens = res.unsga3_fk.n_gen
+            all_res_hvs.append( { "alg_name":alg_name, "res_max":[ max(hvs) for hvs in eval(res.hvs)], "gens":list(range(1,gens+1)) } )
+
+        all_res_hvs_fig = go.Figure()
+        for res_hvs in all_res_hvs:
+            all_res_hvs_fig.add_trace( go.Scatter(x=res_hvs["gens"], y=res_hvs["res_max"], name=res_hvs["alg_name"], mode='lines+markers') )
+        all_res_hvs_fig.update_layout(xaxis_title="GEN", yaxis_title="BEST HV IN GEN")
+        context["all_res_hvs_fig"] = plotly.io.to_html(all_res_hvs_fig, full_html=False)
+        
         return context  

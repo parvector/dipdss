@@ -3,65 +3,183 @@
 {% block title %}Detail{% endblock title %}
 
 {% block content %}
-
-
-
+<main class="container mt-5">
 
     {% if object.status == "Succes"%}
-    <div class="accordion" id="accordionResult">
-
-        {% for res in object.resultmodel_set.all %}
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="heading{{ res.id }}">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ res.id }}" aria-expanded="false" aria-controls="collapse{{ res.id }}">
-    
-                <b>Problem</b>={{ object.problem_fk.problem_name }};
-                {% if res.nsga3_fk %}
-                    <b>Algorithm</b>={{ res.nsga3_fk.alg_name }};
-                    <b>pop size</b>={{ res.nsga3_fk.pop_size }};
-                    <b>eliminate_duplicates</b>={{ res.nsga3_fk.eliminate_duplicates }};
-                    <b>n gen</b>={{ res.nsga3_fk.n_gen }};
-                    <b>n offsprings</b>={{ res.nsga3_fk.n_offsprings }};
-                {% elif res.unsga3_fk %}
-                    <b>Algorithm</b>={{ res.unsga3_fk.alg_name }};
-                    <b>pop size</b>={{ res.unsga3_fk.pop_size }};
-                    <b>eliminate_duplicates</b>={{ res.unsga3_fk.eliminate_duplicates }};
-                    <b>n gen</b>={{ res.unsga3_fk.n_gen }};
-                    <b>n offsprings</b>={{ res.unsga3_fk.n_offsprings }};
-                {% endif %}
-                <b>HV</b>={{ res.hv }}
-    
-            </button>
-          </h2>
-          <div id="collapse{{ res.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ res.id }}" data-bs-parent="#accordionResult">
-            <div class="accordion-body">
-    
-                <div class="form-group">
-                    <label for="exampleFormControlTextarea1">Result X</label>
-                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
-                        {{ res.result_x }}
-                    </textarea>
+    <div class="row" >
+        <div class="row">
+            <div class="accordion col" id="accordionProblem">
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingProblem">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProblem" aria-expanded="false" aria-controls="collapseProblem">
+                  <b>Проблема</b>:{{ object.problem_fk.problem_name }}
+                </button>
+              </h2>
+              <div id="collapseProblem" class="accordion-collapse collapse" aria-labelledby="headingProblem" data-bs-parent="#accordionProblem">
+                <div class="accordion-body">
+                    <p><b>nvar:</b>{{object.problem_fk.nvar}}</p>
+                    <hr>
+                    <p><b>nobj:</b>{{object.problem_fk.nobj}}</p>
+                    <hr>
+                    <p><b>ncostr:</b>{{object.problem_fk.ncostr}}</p>
+                    <hr>
+                    <div>
+                        <p><b>xl:</b></p>
+                        <br>
+                        <textarea class="form-control" id="exampleFormControlTextarea1" rows="1" readonly="readonly">{{object.problem_fk.xl}}</textarea>
+                    </div>
+                    <hr>
+                    <div>
+                        <p><b>xu:</b></p>
+                        <br>
+                        <textarea class="form-control" id="exampleFormControlTextarea1" rows="2" readonly="readonly">{{object.problem_fk.xu}}</textarea>
+                    </div>
                 </div>
-    
-                <div class="form-group">
-                    <label for="exampleFormControlTextarea1">Result F</label>
-                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
-                        {{ res.result_f }}
-                    </textarea>
-                </div>
-    
-                <div class="form-group">
-                    <label for="exampleFormControlTextarea1">Result G</label>
-                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">
-                        {{ res.result_g }}
-                    </textarea>
-                </div>
-                
+              </div>
             </div>
-          </div>
+            </div>
+            <div class="accordion col" id="accordionFG">
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFG">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFG" aria-expanded="false" aria-controls="collapseFG">
+                  <b>Функции критериев и ограничений</b>
+                </button>
+              </h2>
+              <div id="collapseFG" class="accordion-collapse collapse" aria-labelledby="headingFG" data-bs-parent="#accordionFG">
+                <div class="accordion-body">
+                    {% for fg in object.fgs_fk.all %}
+                        <p><b>{{fg.fg_name}}</b></p>
+                        <div class="form-floating">
+                            <p>Критерий</p>
+                            <textarea class="form-control" rows="1"  id="floatingTextarea" readonly="readonly">{{fg.f}}</textarea>
+                            <p>Ограничение</p>
+                            <textarea class="form-control" rows="1" id="floatingTextarea" readonly="readonly">{{fg.g}}</textarea>
+                            <hr>
+                        </div>
+                    {% endfor %}
+                </div>
+              </div>
+            </div>
+            </div>
         </div>
+        {{all_res_hvs_fig|safe}}
+        {% for res_hst in ress_hsts_hvs %}
+            {{ res_hst.hstry_x.1 }}
+            <div class="accordion row mt-2" id="accordion{{ res_hst.res.id }}">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ res_hst.res.id }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ res_hst.res.id }}" aria-expanded="false" aria-controls="collapse{{ res_hst.res.id }}">
+                            <b>{{res_hst.res.nsga3_fk.alg_name}}</b>
+                            <b>{{res_hst.res.unsga3_fk.alg_name}}</b>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ res_hst.res.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ res_hst.res.id }}" data-bs-parent="#accordion{{ res_hst.res.id }}">
+                        <div class="accordion-body">
+                            {% if res_hst.res.nsga3_fk or res_hst.res.unsga3_fk %}
+                            <div class="row">
+                                <p><b>ref_dirs:</b></p>
+                                <br>
+                                <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" readonly="readonly">{{res_hst.res.nsga3_fk.ref_dirs}} {{res_hst.res.unsga3_fk.ref_dirs}}</textarea>
+                            </div>
+                            <hr>
+                            {% if res_hst.res.nsga3_fk.auto_ref_dirs_method or res_hst.res.unsga3_fk.auto_ref_dirs_method %}
+                                <div class="row">
+                                    <p><b>auto_ref_dirs_method:</b>{{res_hst.res.nsga3_fk.auto_ref_dirs_method}}
+                                                                    {{res_hst.res.unsga3_fk.auto_ref_dirs_method}}</p>
+                                </div>
+                            {% endif %}
+                            {% if res_hst.res.nsga3_fk.auto_ref_dirs_dimensions or res_hst.res.unsga3_fk.auto_ref_dirs_dimensions %}
+                                <div class="row">
+                                    <p><b>auto_ref_dirs_dimensions:</b>{{res_hst.res.nsga3_fk.auto_ref_dirs_dimensions}}
+                                                                        {{res_hst.res.unsga3_fk.auto_ref_dirs_dimensions}}</p>
+                                </div>
+                            {% endif %}
+                            {% if res_hst.res.nsga3_fk.auto_ref_dirs_npartitions or res_hst.res.unsga3_fk.auto_ref_dirs_npartitions %}
+                                <div class="row">
+                                    <p><b>auto_ref_dirs_npartitions:</b>{{res_hst.res.nsga3_fk.auto_ref_dirs_npartitions}}
+                                                                        {{res_hst.res.unsga3_fk.auto_ref_dirs_npartitions}}</p>
+                                </div>
+                            {% endif %}
+                            <div class="row">
+                                <p><b>plot of ref dirs:</b></p>
+                                {{res_hst.res.ref_dirs_fig|safe}}{{res_hst.res.ref_dirs_fig|safe}}
+                            </div>
+                            <div class="row">
+                                <p><b>pop_size:</b>{{res_hst.res.nsga3_fk.pop_size}}
+                                                    {{res_hst.res.unsga3_fk.pop_size}}</p>
+                            </div>
+                            <div class="row">
+                                <p><b>eliminate_duplicates:</b>{{res_hst.res.nsga3_fk.eliminate_duplicates}}
+                                                               {{res_hst.res.unsga3_fk.eliminate_duplicates}}</p>
+                            </div>
+                            <div class="row">
+                                <p><b>n_offsprings:</b>{{res_hst.res.nsga3_fk.n_offsprings}}
+                                                       {{res_hst.res.unsga3_fk.n_offsprings}}</p>
+                            </div>
+                            <div class="row">
+                                <p><b>n_gen:</b>{{res_hst.res.nsga3_fk.n_gen}}{{res_hst.res.unsga3_fk.n_gen}}</p>
+                            </div>
+                            <div class="row">
+                                {{ res_hst.res.hvs_gens_fig|safe }}{{ res_hst.res.hvs_gens_fig|safe }}
+                            </div>
+
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Gen</th>
+                                    <th scope="col">X</th>
+                                    <th scope="col">F</th>
+                                    <th scope="col">G</th>
+                                    <th scope="col">HV</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hstry in res_hst.hstry_x_f_g %}
+                                    <tr>
+                                        <th scope="row">{{ forloop.counter }}</th>
+                                        <td>
+                                            {% for h in hstry.0 %}
+                                                {{ h }}
+                                                {% if h != hstry.0|last %}
+                                                    <hr>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for h in hstry.1 %}
+                                                {{ h }}
+                                                {% if h != hstry.1|last %}
+                                                    <hr>
+                                                {% endif %}                                            
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for h in hstry.2 %}
+                                                {{ h }}
+                                                {% if h != hstry.2|last %}
+                                                    <hr>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for h in hstry.3 %}
+                                                {{ h }}
+                                                {% if h != hstry.3|last %}
+                                                    <hr>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                              </table>
+
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endfor %}
-        
     </div>
     
 
@@ -80,4 +198,5 @@
 
     {% endif %}
 
+</main>
 {% endblock content %}

@@ -10,7 +10,7 @@ import django
 def vals_have_same_dim(value):
     values = value.split("],[")
     if len(values) == 1 and values[0][0] != "[" and values[0][-1:] != "]":
-        raise ValidationError(message="The string %(value)s does not contain closing parentheses.", params={"value":value})
+        raise ValidationError(message="%(value)s не содержит закрывающиеся скобки.", params={"value":value})
     elif len(values) == 1:
         values[0] = values[0][1:-1]
     elif len(values) > 1:
@@ -19,16 +19,22 @@ def vals_have_same_dim(value):
         first_val_dim = len(values[0].split(","))
         for value in values[1:]:
             if len(value.split(",")) != first_val_dim:
-                raise ValidationError(message="The dimension %(error_value)s differs from the dimension of the first value [%(first_val)s].", params={"first_val":values[0], "error_value":value})
+                raise ValidationError(message="Количество измерений %(error_value)s отличается от количества измерений первого значений [%(first_val)s].", params={"first_val":values[0], "error_value":value})
 
 def is_positive_int_or_None(value):
     if not value.isdigit() and value != "None":
-        raise ValidationError(message="The value must be a positive number or None. %(value)s is not a positive number or None.", params={"value":value})
+        raise ValidationError(message="Значением должно быть положительное целое число или None. %(value)s не положительное целое число и не None.", params={"value":value})
+
+def valid_fg_func(value):
+    for v in value:
+        if v.isalpha() and v != "x":
+            raise ValidationError(message="В качестве переменной должна быть переменная x, а не %(v)s.", params={"v":v})
+
 
 class NSGA3Model(models.Model):
     user_fk = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     alg_name = models.CharField(max_length=64, default="", blank=False)
-    ref_dirs = models.TextField(validators=[vals_have_same_dim], help_text="input format:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Float format:1.2", null=True, blank=True)
+    ref_dirs = models.TextField(validators=[vals_have_same_dim], help_text="Формат ввода:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Формат чисел с плавающей точкой:1.2", null=True, blank=True)
     auto_ref_dirs_method = models.CharField(max_length=11,choices=[("None","None"),("das-dennis","das-dennis"),("energy","energy")], default="None", blank=True)
     auto_ref_dirs_dimensions = models.PositiveIntegerField(null=True, blank=True)
     auto_ref_dirs_npartitions = models.PositiveIntegerField(null=True, blank=True)
@@ -44,13 +50,13 @@ class NSGA3Model(models.Model):
 class UNSGA3Model(models.Model):
     user_fk = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     alg_name = models.CharField(max_length=64, default="", blank=False)
-    ref_dirs = models.TextField(validators=[vals_have_same_dim], help_text="input format:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Float format:1.2", null=True, blank=True)
+    ref_dirs = models.TextField(validators=[vals_have_same_dim], help_text="Формат ввода:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Формат чисел с плавающей точкой:1.2", null=True, blank=True)
     auto_ref_dirs_method = models.CharField(max_length=11,choices=[("None","None"),("das-dennis","das-dennis"),("energy","energy")], default="None", blank=True)
     auto_ref_dirs_dimensions = models.PositiveIntegerField(null=True, blank=True)
     auto_ref_dirs_npartitions = models.PositiveIntegerField(null=True, blank=True)
     pop_size = models.PositiveIntegerField(default=10)
     eliminate_duplicates = models.BooleanField(default=True)
-    n_offsprings = models.CharField(max_length=16, null=10, validators=[is_positive_int_or_None], blank=True)
+    n_offsprings = models.CharField(max_length=16, null=10, validators=[is_positive_int_or_None], default="None", blank=True)
     n_gen = models.PositiveIntegerField(default=10)
     isused = models.BooleanField(default=False)
 
@@ -63,10 +69,8 @@ class ProblemModel(models.Model):
     nvar = models.PositiveIntegerField()
     nobj = models.PositiveIntegerField()
     ncostr = models.PositiveIntegerField()
-    xl = models.TextField(validators=[vals_have_same_dim], help_text="input format:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Float format:1.2", null=True)
-    xu = models.TextField(validators=[vals_have_same_dim], help_text="input format:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Float format:1.2", null=True)
-    nsga3_fk = models.ForeignKey(NSGA3Model, on_delete=models.CASCADE, null=True, blank=True)
-    unsga3_fk = models.ForeignKey(UNSGA3Model, on_delete=models.CASCADE, null=True, blank=True)
+    xl = models.TextField(validators=[vals_have_same_dim], help_text="Формат ввода:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Формат чисел с плавающей точкой:1.2", null=True)
+    xu = models.TextField(validators=[vals_have_same_dim], help_text="Формат ввода:[x,y,...,z],[x,y,...,z],...,[x,y,...,z]. Формат чисел с плавающей точкой:1.2", null=True)
     isused = models.BooleanField(default=False)
 
 
@@ -77,8 +81,8 @@ class FGModel(models.Model):
     user_fk = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     problem_fk = models.ManyToManyField(ProblemModel, blank=True)
     fg_name = models.CharField(max_length=64, default="")
-    f = models.TextField()
-    g = models.TextField()
+    f = models.TextField(validators=[valid_fg_func], help_text="В качестве переменной поступает вектор чисел x. Введите x[:,0], чтобы получить первое значение, или x[:,1], чтобы получить второе значение.")
+    g = models.TextField(validators=[valid_fg_func], help_text="В качестве переменной поступает вектор чисел x. Введите x[:,0], чтобы получить первое значение, или x[:,1], чтобы получить второе значение.")
     isused = models.BooleanField(default=False)
 
     def __str__(self):
@@ -119,10 +123,17 @@ class ResultModel(models.Model):
     problem_fk = models.ForeignKey(ProblemModel, on_delete=models.CASCADE)
     nsga3_fk = models.ForeignKey(NSGA3Model, on_delete=models.CASCADE, blank=True, null=True)
     unsga3_fk = models.ForeignKey(UNSGA3Model, on_delete=models.CASCADE, blank=True, null=True)
+
     result_x = models.TextField(blank=True)
+    hstry_x = models.TextField(blank=True)
     result_f = models.TextField(blank=True)
+    hstry_f = models.TextField(blank=True)
     result_g = models.TextField(blank=True)
-    hv = models.FloatField(blank=True, null=True)
+    hstry_g = models.TextField(blank=True)
+    hvs = models.TextField(blank=True)
+    
+    hvs_gens_fig = models.TextField(blank=True)
+    ref_dirs_fig = models.TextField(blank=True)
 
     class Meta:
         unique_together = ["task_fk", "nsga3_fk", "unsga3_fk", "problem_fk"]
